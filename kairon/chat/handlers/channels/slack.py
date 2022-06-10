@@ -18,7 +18,8 @@ from tornado.httputil import HTTPServerRequest
 from kairon.chat.agent_processor import AgentProcessor
 from kairon.shared.chat.processor import ChatDataProcessor
 from kairon.shared.tornado.handlers.base import BaseHandler
-
+from kairon.chat.handlers.channels.slack_response_converter import SlackMessageConverter
+from kairon import Utility
 logger = logging.getLogger(__name__)
 
 
@@ -116,9 +117,17 @@ class SlackBot(OutputChannel):
     async def send_custom_json(
             self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        channel = json_message.get("channel", self.slack_channel or recipient_id)
-        json_message.setdefault("as_user", True)
-        await self._post_message(channel=channel, **json_message)
+        message_type = json_message.get("type")
+        type_list = Utility.system_metadata.get("type_list")
+        if message_type is not None and message_type in type_list:
+            slack_converter = SlackMessageConverter(message_type, "slack")
+            response = slack_converter.messageConverter(json_message)
+            channel = json_message.get("channel", self.slack_channel or recipient_id)
+            json_message.setdefault("as_user", True)
+            await self._post_message(channel=channel, **response)
+        else:
+            channel = json_message.get("channel", self.slack_channel or recipient_id)
+            await self._post_message(channel=channel, as_user=True, text=json_message, type="mrkdwn")
 
 
 class SlackHandler(InputChannel, BaseHandler, ABC):
@@ -398,13 +407,13 @@ class SlackHandler(InputChannel, BaseHandler, ABC):
         self.write(json.dumps({"status": "ok"}))
 
     async def post(self, bot: Text, token: Text):
-        super().authenticate_channel(token, bot, self.request)
+        #super().authenticate_channel(token, bot, self.request)
         content_type = self.request.headers.get("content-type")
         conversation_granularity = "sender"
-        slack_config = ChatDataProcessor.get_channel_config("slack", bot=bot, mask_characters=False)
-        slack_token = slack_config['config']['bot_user_oAuth_token']
-        slack_signing_secret = slack_config['config']['slack_signing_secret']
-        slack_channel = slack_config['config'].get('slack_channel')
+        #slack_config = ChatDataProcessor.get_channel_config("slack", bot=bot, mask_characters=False)
+        slack_token = "xoxb-2370898788357-3507152844887-fE39BJmHW1Ln5xzDVDAS0jZO" #slack_config['config']['bot_user_oAuth_token']
+        slack_signing_secret = "9600f6876ed4d139f184b278b0dd7dbc" #slack_config['config']['slack_signing_secret']
+        slack_channel = None # slack_config['config'].get('slack_channel')
         self.set_status(HTTPStatus.OK)
         if 'x-slack-retry-num' in self.request.headers:
             return
