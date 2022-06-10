@@ -184,12 +184,12 @@ class TelegramHandler(InputChannel, BaseHandler):
         self.write(json_encode({"status": "ok"}))
 
     async def post(self, bot: str, token: str):
-        #super().authenticate_channel(token, bot, self.request)
-        #telegram = ChatDataProcessor.get_channel_config("telegram", bot, mask_characters=False)
-        out_channel = TelegramOutput("5552203174:AAHmGOxOzctyvwfxrdRMmj0dz9i8zD1BVuc")
+        super().authenticate_channel(token, bot, self.request)
+        telegram = ChatDataProcessor.get_channel_config("telegram", bot, mask_characters=False)
+        out_channel = TelegramOutput(telegram['config']['access_token'])
         request_dict = json_decode(self.request.body)
         update = Update.de_json(request_dict)
-        if not out_channel.get_me().username == "ibocom_bot": #telegram['config'].get("username_for_bot"):
+        if not out_channel.get_me().username == telegram['config'].get("username_for_bot"):
             logger.debug("Invalid access token, check it matches Telegram")
             self.write("failed")
             return

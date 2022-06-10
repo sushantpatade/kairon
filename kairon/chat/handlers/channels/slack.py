@@ -407,13 +407,13 @@ class SlackHandler(InputChannel, BaseHandler, ABC):
         self.write(json.dumps({"status": "ok"}))
 
     async def post(self, bot: Text, token: Text):
-        #super().authenticate_channel(token, bot, self.request)
+        super().authenticate_channel(token, bot, self.request)
         content_type = self.request.headers.get("content-type")
         conversation_granularity = "sender"
-        #slack_config = ChatDataProcessor.get_channel_config("slack", bot=bot, mask_characters=False)
-        slack_token = "xoxb-2370898788357-3507152844887-fE39BJmHW1Ln5xzDVDAS0jZO" #slack_config['config']['bot_user_oAuth_token']
-        slack_signing_secret = "9600f6876ed4d139f184b278b0dd7dbc" #slack_config['config']['slack_signing_secret']
-        slack_channel = None # slack_config['config'].get('slack_channel')
+        slack_config = ChatDataProcessor.get_channel_config("slack", bot=bot, mask_characters=False)
+        slack_token = slack_config['config']['bot_user_oAuth_token']
+        slack_signing_secret = slack_config['config']['slack_signing_secret']
+        slack_channel = slack_config['config'].get('slack_channel')
         self.set_status(HTTPStatus.OK)
         if 'x-slack-retry-num' in self.request.headers:
             return

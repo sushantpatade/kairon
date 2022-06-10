@@ -147,11 +147,11 @@ class WhatsappHandler(MessengerHandler):
     """Whatsapp input channel implementation. Based on the HTTPInputChannel."""
 
     async def get(self, bot: str, token: str):
-        #super().authenticate_channel(token, bot, self.request)
+        super().authenticate_channel(token, bot, self.request)
         self.set_status(HTTPStatus.OK)
-        #messenger_conf = ChatDataProcessor.get_channel_config("whatsapp", bot, mask_characters=False)
+        messenger_conf = ChatDataProcessor.get_channel_config("whatsapp", bot, mask_characters=False)
 
-        verify_token ="integrate_2" # messenger_conf["config"]["verify_token"]
+        verify_token = messenger_conf["config"]["verify_token"]
 
         if (self.request.query_arguments.get("hub.verify_token")[0]).decode() == verify_token:
             hub_challenge = (self.request.query_arguments.get("hub.challenge")[0]).decode()
@@ -163,11 +163,11 @@ class WhatsappHandler(MessengerHandler):
             return
 
     async def post(self, bot: str, token: str):
-        #super().authenticate_channel(token, bot, self.request)
-        #messenger_conf = ChatDataProcessor.get_channel_config("whatsapp", bot, mask_characters=False)
+        super().authenticate_channel(token, bot, self.request)
+        messenger_conf = ChatDataProcessor.get_channel_config("whatsapp", bot, mask_characters=False)
 
-        app_secret = "be00b5c9ebc90d51d0ec8c9f5b59eb61"  # messenger_conf["config"]["app_secret"]
-        access_token = "EAAHrJgDJAEMBAIMd1Du5nLmRJPmUhp9lRe9Eb1lXn8EUmOw1OtK3mE9xH6LrWOiXijZCCBn9DzTc9qtMlHNFs5c7gm0D9jyey10kQXWjPffdrZAJdh9VZCJLMna4NSsTZBQq7jb4ucfnvZB9ZC6w45T1M4iUx6jZCAgGbvRWNlgjsdhR104yd2xXWJadHZCXNH7wo7KJOyE1iAZDZD"  # messenger_conf["config"]["access_token"]
+        app_secret = messenger_conf["config"]["app_secret"]
+        access_token = messenger_conf["config"]["access_token"]
 
         signature = self.request.headers.get("X-Hub-Signature") or ""
         if not self.validate_hub_signature(app_secret, self.request.body, signature):

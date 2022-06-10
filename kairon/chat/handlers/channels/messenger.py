@@ -336,11 +336,11 @@ class MessengerHandler(InputChannel, BaseHandler):
 
     # noinspection PyUnusedLocal
     async def get(self, bot: str, token: str):
-        #super().authenticate_channel(token, bot, self.request)
+        super().authenticate_channel(token, bot, self.request)
         self.set_status(HTTPStatus.OK)
-        messenger_conf = "integrate_1" # ChatDataProcessor.get_channel_config("messenger", bot, mask_characters=False)
+        messenger_conf = ChatDataProcessor.get_channel_config("messenger", bot, mask_characters=False)
 
-        fb_verify = "integrate_1" #messenger_conf["config"]["verify_token"]
+        fb_verify = messenger_conf["config"]["verify_token"]
 
         if (self.request.query_arguments.get("hub.verify_token")[0]).decode() == fb_verify:
             hub_challenge = (self.request.query_arguments.get("hub.challenge")[0]).decode()
@@ -355,11 +355,11 @@ class MessengerHandler(InputChannel, BaseHandler):
             return
 
     async def post(self, bot: str, token: str):
-        #super().authenticate_channel(token, bot, self.request)
-        #messenger_conf = ChatDataProcessor.get_channel_config("messenger", bot, mask_characters=False)
+        super().authenticate_channel(token, bot, self.request)
+        messenger_conf = ChatDataProcessor.get_channel_config("messenger", bot, mask_characters=False)
 
-        fb_secret = "be00b5c9ebc90d51d0ec8c9f5b59eb61" #messenger_conf["config"]["app_secret"]
-        page_access_token = "EAAHrJgDJAEMBAPgxxggKhS1rDiNxuJs5oEXPVKYZBfUVBNMDBzwy2QZCGhiZCdR3lqnT6BauSHL6en2wHzyT4e8CZB8UtMJDfMDZCzVu6FmRKayBgWOWgwoQ19hI3Ok8iH0zSNiIZAtiIPTCVyuJ5ecGMzqn503yJnanJRX3dspULTHZBR8TjwnVbGE4JqrWRsZD" # messenger_conf["config"]["page_access_token"]
+        fb_secret = messenger_conf["config"]["app_secret"]
+        page_access_token = messenger_conf["config"]["page_access_token"]
 
         signature = self.request.headers.get("X-Hub-Signature") or ""
         if not self.validate_hub_signature(fb_secret, self.request.body, signature):
@@ -415,11 +415,11 @@ class InstagramHandler(MessengerHandler):
 
     # noinspection PyUnusedLocal
     async def get(self, bot: str, token: str):
-        #super().authenticate_channel(token, bot, self.request)
+        super().authenticate_channel(token, bot, self.request)
         self.set_status(HTTPStatus.OK)
-        #messenger_conf = ChatDataProcessor.get_channel_config("instagram", bot, mask_characters=False)
+        messenger_conf = ChatDataProcessor.get_channel_config("instagram", bot, mask_characters=False)
 
-        fb_verify = "integrate_2" #messenger_conf["config"]["verify_token"]
+        fb_verify = messenger_conf["config"]["verify_token"]
 
         if (self.request.query_arguments.get("hub.verify_token")[0]).decode() == fb_verify:
             hub_challenge = (self.request.query_arguments.get("hub.challenge")[0]).decode()
@@ -434,11 +434,11 @@ class InstagramHandler(MessengerHandler):
             return
 
     async def post(self, bot: str, token: str):
-        #super().authenticate_channel(token, bot, self.request)
-        #messenger_conf = ChatDataProcessor.get_channel_config("instagram", bot, mask_characters=False)
+        super().authenticate_channel(token, bot, self.request)
+        messenger_conf = ChatDataProcessor.get_channel_config("instagram", bot, mask_characters=False)
 
-        fb_secret = "08ef800cc3b27a4109585a0499b3d3b3" #messenger_conf["config"]["app_secret"]
-        page_access_token = "EABJUmFHAnuUBAFHI8qJ6QMY5BwfKaZBPoOLFJQPyKhzdZADRguUtfHZCWcWwEt8vWIYc0qgOb4vDfh9VLr7QC4VZCrVJ56FCa7QC9DBeaOUDsoujc3stezgHAaPH9Cus0iXDXjlzqyAFoIAxElJ2yDW9q7j90BzbsrNTbpdnW9ZC9xDXU6Jnl" #messenger_conf["config"]["page_access_token"]
+        fb_secret = messenger_conf["config"]["app_secret"]
+        page_access_token = messenger_conf["config"]["page_access_token"]
 
         signature = self.request.headers.get("X-Hub-Signature") or ""
         if not self.validate_hub_signature(fb_secret, self.request.body, signature):
