@@ -42,7 +42,7 @@ nlpaug
 tornado
 websockets==10.1
 aiohttp==3.8.0
-networkx==2.6
+networkx==2.8.4
 fastapi_sso
 pytest-httpx==0.15.0
 json2html
