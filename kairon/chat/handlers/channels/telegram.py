@@ -21,7 +21,6 @@ from tornado.escape import json_decode, json_encode
 from kairon.shared.chat.processor import ChatDataProcessor
 from kairon.shared.tornado.handlers.base import BaseHandler
 from kairon.chat.agent_processor import AgentProcessor
-from kairon.chat.handlers.channels.telegram_response_converter import TelegramResponseConverter
 from kairon import Utility
 
 logger = logging.getLogger(__name__)
@@ -137,16 +136,18 @@ class TelegramOutput(TeleBot, OutputChannel):
                 "prices",
             ): "send_invoice",
         }
+        message = json_message.get("data")
         message_type = json_message.get("type")
         type_list = Utility.system_metadata.get("type_list")
         if message_type is not None and message_type in type_list:
-            tlg_converter = TelegramResponseConverter(message_type, "telegram")
+            from kairon.chat.converters.responseconverter import ConverterFactory
+            converter_instance = ConverterFactory.getConcreteInstance(message_type, "telegram")
             ops_type = json_message.get("type")
-            response = tlg_converter.messageConverter(json_message)
+            response = converter_instance.messageConverter(message)
             response_list = []
             if ops_type=="image":
+                response_list.append(response.get("photo"))
                 del response["photo"]
-                response_list.append(json_message.get("url"))
                 api_call = getattr(self, send_functions[("photo",)])
                 api_call(recipient_id, *response_list, **response)
             elif ops_type == "link":

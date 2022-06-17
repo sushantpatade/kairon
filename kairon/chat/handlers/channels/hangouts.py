@@ -15,7 +15,7 @@ from kairon.chat.agent_processor import AgentProcessor
 from kairon.shared.chat.processor import ChatDataProcessor
 from kairon.shared.tornado.handlers.base import BaseHandler
 from kairon import Utility
-from kairon.chat.handlers.channels.hangout_response_converter import HangoutResponseConverter
+from ....exceptions import AppException
 
 logger = logging.getLogger(__name__)
 
@@ -183,14 +183,19 @@ class HangoutsOutput(OutputChannel):
         """Custom json payload is simply forwarded to Google Hangouts without
         any modifications. Use this for more complex cards, which can be created
         in actions.py."""
-        message_type = json_message.get("type")
-        type_list = Utility.system_metadata.get("type_list")
-        if message_type is not None and message_type in type_list:
-            hangout_converter = HangoutResponseConverter(message_type, "hangout")
-            response = hangout_converter.messageConverter(json_message)
-            await self._persist_message(response)
-        else:
-            await self._persist_message({"text": str(json_message)})
+        try:
+            message = json_message.get("data")
+            message_type = json_message.get("type")
+            type_list = Utility.system_metadata.get("type_list")
+            if message_type is not None and message_type in type_list:
+                from kairon.chat.converters.responseconverter import ConverterFactory
+                converter_instance = ConverterFactory.getConcreteInstance(message_type, "hangout")
+                response = converter_instance.messageConverter(message)
+                await self._persist_message(response)
+            else:
+                await self._persist_message({"text": str(json_message)})
+        except AppException as ap:
+            raise AppException(f"Error in Hangout send_custom_json {str(ap)}")
 
 
 # Google Hangouts input channel

@@ -18,7 +18,6 @@ from tornado.httputil import HTTPServerRequest
 from kairon.chat.agent_processor import AgentProcessor
 from kairon.shared.chat.processor import ChatDataProcessor
 from kairon.shared.tornado.handlers.base import BaseHandler
-from kairon.chat.handlers.channels.slack_response_converter import SlackMessageConverter
 from kairon import Utility
 logger = logging.getLogger(__name__)
 
@@ -117,11 +116,13 @@ class SlackBot(OutputChannel):
     async def send_custom_json(
             self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
+        message = json_message.get("data")
         message_type = json_message.get("type")
         type_list = Utility.system_metadata.get("type_list")
         if message_type is not None and message_type in type_list:
-            slack_converter = SlackMessageConverter(message_type, "slack")
-            response = slack_converter.messageConverter(json_message)
+            from kairon.chat.converters.responseconverter import ConverterFactory
+            converter_instance = ConverterFactory.getConcreteInstance(message_type, "slack")
+            response = converter_instance.messageConverter(message)
             channel = json_message.get("channel", self.slack_channel or recipient_id)
             json_message.setdefault("as_user", True)
             await self._post_message(channel=channel, **response)

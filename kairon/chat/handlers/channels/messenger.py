@@ -17,7 +17,6 @@ from tornado.escape import json_decode
 from kairon.chat.agent_processor import AgentProcessor
 from kairon.shared.chat.processor import ChatDataProcessor
 from kairon.shared.tornado.handlers.base import BaseHandler
-from kairon.chat.handlers.channels.messenger_response_converter import MessengerResponseConverter
 from kairon import Utility
 logger = logging.getLogger(__name__)
 
@@ -293,14 +292,16 @@ class MessengerBot(OutputChannel):
                 if "sender" in message.keys():
                     recipient_id = message.pop("sender", {}).pop("id", recipient_id)
                     break
+        message = json_message.get("data")
         message_type = json_message.get("type")
         type_list = Utility.system_metadata.get("type_list")
         if message_type is not None and message_type in type_list:
-            messenger_converter = MessengerResponseConverter(message_type, "messenger")
-            response = messenger_converter.messageConverter(json_message)
+            from kairon.chat.converters.responseconverter import ConverterFactory
+            converter_instance = ConverterFactory.getConcreteInstance(message_type, "messenger")
+            response = converter_instance.messageConverter(message)
             self.messenger_client.send(response, recipient_id, "RESPONSE")
         else:
-            self.send(recipient_id, FBText(text=str(json_message)))
+            self.send(recipient_id, FBText(text=str(message)))
 
     @staticmethod
     def _add_postback_info(buttons: List[Dict[Text, Any]]) -> None:
