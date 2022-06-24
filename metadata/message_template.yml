@@ -91,3 +91,18 @@ telegram:
   "reply_to_message_id":0}'
 
 No_Config_error_message: Configuration not provided for channel {} and elementtype {}
+
+channel_messagetype_and_key_mapping: '{"slack": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
+                                 "link": {"data": "<data>"}},
+                       "messenger": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
+                                 "link": {"data": "<data>"} } ,
+                       "hangout": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
+                                     "link": {"data": "<data>"}},
+                       "telegram": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
+                                   "link": {"data": "<data>"}},
+                       "whatsapp": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
+                                     "link": {"data": "<data>"}},
+                       "instagram": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
+                                    "link": {"data": "<data>"}}
+                                     }'
+channel_key_mapping_missing: Element key mapping missing for {} or {}

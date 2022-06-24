@@ -1,4 +1,4 @@
-from kairon.chat.converters.responseconverter import ResponseConverter
+from kairon.chat.converters.responseconverter import ResponseConverter, ElementTransformerOps
 from kairon import Utility
 
 class WhatsappResponseConverter(ResponseConverter):
@@ -12,24 +12,19 @@ class WhatsappResponseConverter(ResponseConverter):
         if type == "image":
             return super().message_extractor(json_message, type)
         if type == "link":
-            link_json = ResponseConverter.json_generator(json_message, "children", type)
+            link_json = ResponseConverter.json_generator(json_message)
             stringbuilder = ""
             for jsonlist in link_json:
                 childerobj = jsonlist.get("children")
-                for items in childerobj:
-                    if items.get("text") is not None and str(items.get("text")).__len__() > 0:
-                        stringbuilder = " ".join([stringbuilder, str(items.get("text"))])
-                    elif items.get("type") is not None and items.get("type") == "link":
-                        link = items.get("href")
-                        stringbuilder = " ".join([stringbuilder, link])
+                stringbuilder = ElementTransformerOps.convertjson_to_link_format(childerobj, stringbuilder, bind_display_str=False)
             body = {"data": stringbuilder}
             return body
 
     def link_transformer(self, message):
         link_extract = self.message_extractor(message, self.type)
-        message_template = self.getChannelConfig()
+        message_template = ElementTransformerOps.getChannelConfig(self.channel_type, self.message_type)
         if message_template is not None:
-            response = self.replace_strategy(message_template, link_extract)
+            response = ElementTransformerOps.replace_strategy(message_template, link_extract, self.channel_type, self.message_type)
             return response
         else:
             message_config = Utility.system_metadata.get("No_Config_error_message")

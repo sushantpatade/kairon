@@ -4,103 +4,117 @@ from kairon import Utility
 from loguru import logger
 from ...exceptions import AppException
 
-class ElementTransformer():
+class ElementTransformerOps():
     def __init__(self, type, channel):
         self.type = type
         self.channel = channel
 
-    def getChannelConfig(self):
-        config_obj = Utility.system_metadata.get(self.channel)
-        message_meta = config_obj.get(self.type)
-        return message_meta
+    @staticmethod
+    def getChannelConfig(channel, type):
+        config_obj = Utility.system_metadata.get(channel)
+        if config_obj is not None:
+            return config_obj.get(type)
+        else:
+            message_config = Utility.system_metadata.get("No_Config_error_message")
+            message_config = str(message_config).format(channel, type)
+            raise Exception(message_config)
 
     def image_transformer(self, message):
-        message_template = self.getChannelConfig()
-        if message_template is not None:
+        try:
+            message_template = ElementTransformerOps.getChannelConfig(self.channel, self.type)
             op_message = self.message_extractor(message, self.type)
-            response = self.replace_strategy(message_template, op_message)
+            response = ElementTransformerOps.replace_strategy(message_template, op_message, self.channel, self.type)
             return response
-        else:
-            message_config = Utility.system_metadata.get("No_Config_error_message")
-            message_config = str(message_config).format(self.channel, self.type)
-            raise Exception(message_config)
+        except Exception as ex:
+            raise AppException(f"Exception in Image_transformer: {str(ex)}")
 
     def link_transformer(self, message):
-        link_extract = self.message_extractor(message, self.type)
-        message_template = self.getChannelConfig()
-        if message_template is not None:
-            response = self.replace_strategy(message_template, link_extract)
+        try:
+            link_extract = self.message_extractor(message, self.type)
+            message_template = ElementTransformerOps.getChannelConfig(self.channel, self.type)
+            response = ElementTransformerOps.replace_strategy(message_template, link_extract, self.channel, self.type)
             return response
-        else:
-            message_config = Utility.system_metadata.get("No_Config_error_message")
-            message_config = str(message_config).format(self.channel, self.type)
-            raise Exception(message_config)
+        except Exception as ex:
+            raise AppException(f"Exception in Link_Transformer: {str(ex)}")
 
     @staticmethod
-    def json_generator( json_input, lookup_key, value):
+    def json_generator(json_input):
         if isinstance(json_input, dict):
                 yield json_input
         elif isinstance(json_input, list):
             for item in json_input:
-                yield from ResponseConverter.json_generator(item, lookup_key, value)
+                yield from ResponseConverter.json_generator(item)
 
     def message_extractor(self, json_message, type):
-        if type == "image":
-            image_json = ResponseConverter.json_generator(json_message, "type", type)
-            body = {}
-            for item in image_json:
-                if item.get("type") == "image":
-                    body.update({"type": item.get("type"), "URL": item.get("src"),
-                                 "caption": item.get("alt")})
-                    return  body
-        elif type == "link":
-            link_json = ResponseConverter.json_generator(json_message, "children", type)
-            stringbuilder = ""
-            for jsonlist in link_json:
-                childerobj = jsonlist.get("children")
-                for items in childerobj:
-                    if items.get("text") is not None and str(items.get("text")).__len__() > 0:
-                        stringbuilder = " ".join([stringbuilder, str(items.get("text"))])
-                    elif items.get("type") is not None and items.get("type") == "link":
-                        link = items.get("href")
-                        displaydata = items.get("children")
-                        for displayobj in displaydata:
-                            displaystring = displayobj.get("text")
-                            link_formation = "<" + str(link) + "|" + str(displaystring) + ">"
-                        stringbuilder = " ".join([stringbuilder, link_formation])
-            body = {"data":stringbuilder}
-            return body
+        try:
+            if type == "image":
+                image_json = ResponseConverter.json_generator(json_message)
+                body = {}
+                for item in image_json:
+                    if item.get("type") == "image":
+                        body.update({"type": item.get("type"), "URL": item.get("src"),
+                                     "caption": item.get("alt")})
+                        return  body
+            elif type == "link":
+                link_json = ResponseConverter.json_generator(json_message)
+                stringbuilder = ""
+                for jsonlist in link_json:
+                    childerobj = jsonlist.get("children")
+                    stringbuilder = ElementTransformerOps.convertjson_to_link_format(childerobj, stringbuilder)
+                body = {"data":stringbuilder}
+                return body
+        except Exception as ex:
+            raise Exception(f"Exception in message_extraction for channel: {self.channel} "
+                            f"and type: {self.type}: - {str(ex)}")
 
+    @staticmethod
+    def replace_strategy(message_template, message, channel, type):
+        keymapping = Utility.system_metadata.get("channel_messagetype_and_key_mapping")
+        if keymapping is not None:
+            jsonkey_mapping = json.loads(keymapping)
+            channel_meta = jsonkey_mapping.get(channel)
+            if channel_meta is not None:
+                keydata_mapping = channel_meta.get(type)
+                if keydata_mapping is not None:
+                    for key in keydata_mapping:
+                        value_from_json = message.get(key)
+                        replace_in_template = keydata_mapping.get(key)
+                        message_template = message_template.replace(replace_in_template, value_from_json)
+                    return json.loads(message_template)
+                else:
+                    message_config = Utility.system_metadata.get("channel_key_mapping_missing")
+                    message_config = str(message_config).format(channel, type)
+                    raise Exception(message_config)
+            else:
+                message_config = Utility.system_metadata.get("channel_key_mapping_missing")
+                message_config = str(message_config).format(channel, type)
+                raise Exception(message_config)
 
-    def replace_strategy(self, message_template, message):
-        replacekeys = {"slack": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
-                                 "link": {"data": "<data>"}},
-                       "messenger": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
-                                 "link": {"data": "<data>"} } ,
-                       "hangout": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
-                                     "link": {"data": "<data>"}},
-                       "telegram": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
-                                   "link": {"data": "<data>"}},
-                       "whatsapp": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
-                                     "link": {"data": "<data>"}},
-                       "instagram": {"image": {"URL": "<imageurl>", "caption": "<alttext>"},
-                                    "link": {"data": "<data>"}}
-                                     }
-        # TODO : if replacekey config is missing
-        channel_meta = replacekeys.get(self.channel).get(self.type)
-        for key in channel_meta:
-            value_from_json = message.get(key)
-            replace_in_template = channel_meta.get(key)
-            message_template = message_template.replace(replace_in_template, value_from_json)
-        return json.loads(message_template)
+    @staticmethod
+    def convertjson_to_link_format(arry_of_json, stringbuilder , bind_display_str = True):
+        for items in arry_of_json:
+            if items.get("text") is not None and str(items.get("text")).__len__() > 0:
+                stringbuilder = " ".join([stringbuilder, str(items.get("text"))])
+            elif items.get("type") is not None and items.get("type") == "link":
+                link = items.get("href")
+                if bind_display_str:
+                    displaydata = items.get("children")
+                    for displayobj in displaydata:
+                        displaystring = displayobj.get("text")
+                        link_formation = "<" + str(link) + "|" + str(displaystring) + ">"
+                        break
+                    stringbuilder = " ".join([stringbuilder, link_formation])
+                else:
+                    stringbuilder = " ".join([stringbuilder, link])
+        return stringbuilder
 
-class ResponseConverter(ABC, ElementTransformer):
+class ResponseConverter(ABC, ElementTransformerOps):
 
     @abstractmethod
     def __init__(self, message_type, channel_type):
         self.channel_type = channel_type
         self.message_type = message_type
-        ElementTransformer.__init__(self, message_type, channel_type)
+        ElementTransformerOps.__init__(self, message_type, channel_type)
 
     def messageConverter(self, message):
         try :
