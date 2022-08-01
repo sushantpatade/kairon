@@ -304,7 +304,7 @@ class MessengerBot(OutputChannel):
                 response = await converter_instance.messageConverter(message)
                 self.messenger_client.send(response, recipient_id, "RESPONSE")
             else:
-                self.send(recipient_id, FBText(text=str(message)))
+                self.send(recipient_id, FBText(text=str(json_message)))
         except Exception as ap:
             raise Exception(f"Error in messenger send_custom_json {str(ap)}")
 
