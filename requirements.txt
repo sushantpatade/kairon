@@ -46,7 +46,7 @@ networkx==2.6
 fastapi_sso
 pytest-httpx==0.15.0
 json2html
-numpy==1.22.0
+numpy==1.23.5
 protobuf==3.20.1
 google-api-python-client
 nltk==3.6.6
