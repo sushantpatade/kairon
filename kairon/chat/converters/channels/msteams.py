@@ -1,6 +1,6 @@
-from kairon.chat.converters.channels.responseconverter import ElementTransformerOps
 from kairon.chat.converters.channels.constants import ELEMENT_TYPE
-import json
+from kairon.chat.converters.channels.responseconverter import ElementTransformerOps
+
 
 class MSTeamsResponseConverter(ElementTransformerOps):
 
@@ -39,29 +39,26 @@ class MSTeamsResponseConverter(ElementTransformerOps):
                 return attachment
 
     def button_transformer(self, message):
-        try:
-            jsoniterator = ElementTransformerOps.json_generator(message)
-            attachment = {"attachments":[]}
-            content = {}
-            buttons = []
-            body_default = ElementTransformerOps.getChannelConfig(self.channel, "body_message")
-            for item in jsoniterator:
-                if item.get("type") == ELEMENT_TYPE.BUTTON.value:
-                    title = ElementTransformerOps.json_generator(item.get("children"))
-                    for titletext in title:
-                        button_text = titletext.get("text")
-                    content.update({"text":body_default})
-                    btn_body = {}
-                    btn_body.update({"type": "imBack"})
-                    btn_body.update({"value":item.get("value"), "title": button_text})
-                    buttons.append(btn_body)
-                    content.update({"buttons":buttons})
-            attachment_element = {"contentType": "application/vnd.microsoft.card.hero",
-                                              "content":content}
-            attachment["attachments"].append(attachment_element)
-            return attachment
-        except Exception as ex:
-            raise Exception(f" Error in MSTeamsResponseConverter::button_transformation {str(ex)}")
+        jsoniterator = ElementTransformerOps.json_generator(message)
+        attachment = {"attachments":[]}
+        content = {}
+        buttons = []
+        body_default = ElementTransformerOps.getChannelConfig(self.channel, "body_message")
+        for item in jsoniterator:
+            if item.get("type") == ELEMENT_TYPE.BUTTON.value:
+                title = ElementTransformerOps.json_generator(item.get("children"))
+                for titletext in title:
+                    button_text = titletext.get("text")
+                content.update({"text":body_default})
+                btn_body = {}
+                btn_body.update({"type": "imBack"})
+                btn_body.update({"value":item.get("value"), "title": button_text})
+                buttons.append(btn_body)
+                content.update({"buttons":buttons})
+        attachment_element = {"contentType": "application/vnd.microsoft.card.hero",
+                                          "content":content}
+        attachment["attachments"].append(attachment_element)
+        return attachment
 
     async def messageConverter(self, message):
         try:
